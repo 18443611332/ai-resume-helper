@@ -1,17 +1,34 @@
 import os
 import json
+import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI
 from prompts import SYSTEM_PROMPT
 
+# 本地运行时读取 .env
 load_dotenv(override=True)
 
-api_key = os.getenv("OPENAI_API_KEY")
-base_url = os.getenv("OPENAI_BASE_URL")
-model_name = os.getenv("OPENAI_MODEL", "deepseek-v4-flash")
 
-if not api_key:
-    raise ValueError("没有读取到 OPENAI_API_KEY，请检查 .env 文件。")
+def get_config():
+    api_key = os.getenv("OPENAI_API_KEY")
+    base_url = os.getenv("OPENAI_BASE_URL")
+    model_name = os.getenv("OPENAI_MODEL", "deepseek-v4-flash")
+
+    # 如果环境变量没有，再尝试从 Streamlit secrets 里读
+    if not api_key:
+        api_key = st.secrets.get("OPENAI_API_KEY", "")
+    if not base_url:
+        base_url = st.secrets.get("OPENAI_BASE_URL", "https://api.deepseek.com")
+    if not model_name:
+        model_name = st.secrets.get("OPENAI_MODEL", "deepseek-v4-flash")
+
+    if not api_key:
+        raise ValueError("没有读取到 OPENAI_API_KEY，请检查本地 .env 或 Streamlit Secrets。")
+
+    return api_key, base_url, model_name
+
+
+api_key, base_url, model_name = get_config()
 
 client = OpenAI(
     api_key=api_key,
